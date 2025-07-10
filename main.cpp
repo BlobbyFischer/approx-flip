@@ -17,6 +17,6 @@ int main(int argc, char* argv[])
     scheme.from_file(filename);
     scheme.random_walk(pathlength);
     scheme.write_to_file();
-    //scheme.check();
+    scheme.check();
     return 0;
 }

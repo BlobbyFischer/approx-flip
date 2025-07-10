@@ -19,6 +19,7 @@ bool Scheme::update() {
     for (int i=0; i<tensors.size(); i++) {
         if (tensors[i].update()) {
             tensors.erase(tensors.begin()+i);
+            //cout << endl << endl << endl << "normal reduction" << endl << endl << endl;
             update();
             return true; // because there was a reduction
         }
@@ -70,6 +71,7 @@ bool Scheme::update() {
                         tensors.erase(tensors.begin()+i);
                     }
                     update();
+                    //cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
                     return true;
                 }
                 // is there a third tensor which might go well with either of them?
@@ -118,6 +120,7 @@ bool Scheme::update() {
                         }
                         tensors.erase(tensors.begin()+i);
                     }
+                    //cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
                     update();
                     return true;
                 }
@@ -166,8 +169,8 @@ bool Scheme::update() {
                         }
                         tensors.erase(tensors.begin()+i);
                     }
+                    //cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
                     update();
-                    cout << "eflip reduction found" << endl;
                     return true;
                 }
                 // is there a third tensor which might go well with either of them?
@@ -200,7 +203,6 @@ bool Scheme::update() {
             }
         }
     }
-    cout << endl;
     return false;
 }
 
@@ -337,186 +339,181 @@ void Scheme::write_to_file() {
     }
 }
 
-bool Scheme::flip(int ind1, int ind2, char flip_around) { // I THINK JUST REWRITE THIS...
+/*
+EXPLANATION FOR THE NORMAL FLIPS BEFORE I FORGET
+
+we start with:
+e^x a.b1.c1
+e^y a.b2.c2
+ ||
+ ||
+\  /
+ \/
+a.e^w1 b1.e^(x-w1) c1
+a.e^w2 b2.e^(y-w2) c2
+ ||
+ ||
+\  /
+ \/
+a.e^w1 b1 + e^(k+w2) b2.e^(x-w1) c1
+a.e^w2 b2.e^(y-w2) c2 + e^(k+x-w1) c1
+ ||
+ ||
+\  /
+ \/
+e^(x-w1) a.e^w1 b1 + e^(k+w2) b2. c1
+a.b2.e^y c2 + e^(k+x-w1+w2) c1
+
+so to do a general flip we choose 0<=w1<=x, 0<=w2<=y and k (we probably want to weight the choice of k)
+
+*/
+
+bool Scheme::flip(int ind1, int ind2, char flip_around) {
     Rank1Tensor& tensor1 = tensors[ind1];
     Rank1Tensor& tensor2 = tensors[ind2];
-    int beta1 = rand() % (1 + tensor1.coeff);
-    int beta2 = rand() % (1 + tensor2.coeff);
-    int random_var_for_choosing_gamma = rand() % ((1 << MAX_ORDER) - 1);
-    int gamma = MAX_ORDER-1;
-    while (random_var_for_choosing_gamma > 1) {
-        random_var_for_choosing_gamma /= 2;
-        gamma--;
-    }
-    bool change_coeff1 = false;
-    bool change_coeff2 = false;
-    //gamma is weighted to be most likely to be 0, but could be anything more as well
+    int w1 = rand() % (tensor1.coeff + 1);
+    int w2 = rand() % (tensor2.coeff + 1);
+    int k = rand() % MAX_ORDER; // FIND A BETTER WAY TO CHOOSE k
+    // Let's first ensure they're equal at flip_around (TURNS OUT THIS IS NECESSARY)
     switch(flip_around) {
-        case 'a':
-            //we know we can change one of them to make them equal at flip_around, so lets do that...
-            if (tensor1.coeff >= tensor2.coeff) {
-                for (int i=MAX_ORDER-tensor1.coeff;i<MAX_ORDER-tensor2.coeff;i++) {
+        case 'a': {
+            if (tensor1.coeff <= tensor2.coeff) {
+                for (int i=MAX_ORDER-tensor2.coeff; i<MAX_ORDER; i++) {
+                    tensor2.a[i] = tensor1.a[i];
+                }
+            } else {
+                for (int i=MAX_ORDER-tensor1.coeff; i<MAX_ORDER; i++) {
                     tensor1.a[i] = tensor2.a[i];
                 }
-            } else {
-                for (int i=MAX_ORDER-tensor2.coeff;i<MAX_ORDER-tensor1.coeff;i++) {
-                    tensor2.a[i] = tensor1.a[i];
-                }
-            }
-            //first, lets change tensor1:
-            //which case are we in?
-            if (beta2 + gamma >= beta1) {
-                for (int i=0;i+beta2-beta1+gamma<MAX_ORDER;i++) {
-                    tensor1.b[i+beta2-beta1+gamma] ^= tensor2.b[i];
-                }
-            } else {
-                change_coeff1 = true;
-                //shift t1.b by beta1-beta2-gamma then add t2.b to it
-                int ii=MAX_ORDER-1;
-                while (ii-beta1+beta2+gamma >= 0) {
-                    tensor1.b[ii] = tensor1.b[ii-beta1+beta2+gamma] ^ tensor2.b[ii];
-                    ii--;
-                }
-                while (ii >= 0) {
-                    tensor1.b[ii] = tensor2.b[ii];
-                    ii--;
-                }
-            }
-
-            //next, we change tensor2:
-            //which case are we in this time?
-            if (tensor1.coeff + beta2 - tensor2.coeff - beta1 + gamma >= 0) {
-                for (int i=0;i+beta2+tensor1.coeff+gamma-beta1<MAX_ORDER;i++) {
-                    tensor2.c[i+tensor1.coeff+beta2+gamma-beta1-tensor2.coeff] ^= tensor1.c[i];
-                }
-            } else {
-                change_coeff2 = true;
-                //shift t2.c by t2.coeff+beta1-t1.coeff-beta2-gamma then add t1.c to it
-                int i=MAX_ORDER-1;
-                while (i+tensor1.coeff+beta2+gamma-beta1-tensor2.coeff >= 0) {
-                    tensor2.c[i] = tensor2.c[i+tensor1.coeff+beta2+gamma-beta1-tensor2.coeff] ^ tensor1.c[i];
-                    i--;
-                }
-                while (i >= 0) {
-                    tensor2.c[i] = tensor1.c[i];
-                    i--;
-                }
             }
             break;
-        case 'b':
-            //we know we can change one of them to make them equal at flip_around, so lets do that...
-            if (tensor1.coeff >= tensor2.coeff) {
-                for (int i=MAX_ORDER-tensor1.coeff;i<MAX_ORDER-tensor2.coeff;i++) {
+        }
+        case 'b': {
+            if (tensor1.coeff <= tensor2.coeff) {
+                for (int i=MAX_ORDER-tensor2.coeff; i<MAX_ORDER; i++) {
+                    tensor2.b[i] = tensor1.b[i];
+                }
+            } else {
+                for (int i=MAX_ORDER-tensor1.coeff; i<MAX_ORDER; i++) {
                     tensor1.b[i] = tensor2.b[i];
                 }
-            } else {
-                for (int i=MAX_ORDER-tensor2.coeff;i<MAX_ORDER-tensor1.coeff;i++) {
-                    tensor2.b[i] = tensor1.b[i];
-                }
             }
-            //first, lets change tensor1:
-            //which case are we in?
-            if (beta2 + gamma >= beta1) {
-                for (int i=0;i+beta2-beta1+gamma<MAX_ORDER;i++) {
-                    tensor1.c[i+beta2-beta1+gamma] ^= tensor2.c[i];
+            break;
+        }
+        case 'c': {
+            if (tensor1.coeff <= tensor2.coeff) {
+                for (int i=MAX_ORDER-tensor2.coeff; i<MAX_ORDER; i++) {
+                    tensor2.c[i] = tensor1.c[i];
                 }
             } else {
-                change_coeff1 = true;
-                //shift t1.b by beta1-beta2-gamma then add t2.b to it
-                int ii=MAX_ORDER-1;
-                while (ii-beta1+beta2+gamma >= 0) {
-                    tensor1.c[ii] = tensor1.c[ii-beta1+beta2+gamma] ^ tensor2.c[ii];
-                    ii--;
-                }
-                while (ii >= 0) {
-                    tensor1.c[ii] = tensor2.c[ii];
-                    ii--;
-                }
-            }
-
-            //next, we change tensor2:
-            //which case are we in this time?
-            if (tensor1.coeff + beta2 - tensor2.coeff - beta1 + gamma >= 0) {
-                for (int i=0;i+beta2+tensor1.coeff+gamma-beta1<MAX_ORDER;i++) {
-                    tensor2.a[i+tensor1.coeff+beta2+gamma-beta1-tensor2.coeff] ^= tensor1.a[i];
-                }
-            } else {
-                change_coeff2 = true;
-                //shift t2.c by t2.coeff+beta1-t1.coeff-beta2-gamma then add t1.c to it
-                int i=MAX_ORDER-1;
-                while (i+tensor1.coeff+beta2+gamma-beta1-tensor2.coeff >= 0) {
-                    tensor2.a[i] = tensor2.a[i+tensor1.coeff+beta2+gamma-beta1-tensor2.coeff] ^ tensor1.a[i];
-                    i--;
-                }
-                while (i >= 0) {
-                    tensor2.a[i] = tensor1.a[i];
-                    i--;
+                for (int i=MAX_ORDER-tensor1.coeff; i<MAX_ORDER; i++) {
+                    tensor1.c[i] = tensor2.c[i];
                 }
             }
             break;
-        case 'c':
-            //we know we can change one of them to make them equal at flip_around, so lets do that...
-            if (tensor1.coeff >= tensor2.coeff) {
-                for (int i=MAX_ORDER-tensor1.coeff;i<MAX_ORDER-tensor2.coeff;i++) {
-                    tensor1.c[i] = tensor2.c[i];
+        }
+    }
+    //now we do a flip
+    switch(flip_around) {
+        case 'a': {
+            int powdiff = k + tensor1.coeff + w2 - w1 - tensor2.coeff;
+            if (powdiff >= 0) {
+                for (int i=powdiff;i<MAX_ORDER;i++) {
+                    tensor2.c[i] ^= tensor1.c[i-powdiff];
                 }
             } else {
-                for (int i=MAX_ORDER-tensor2.coeff;i<MAX_ORDER-tensor1.coeff;i++) {
+                tensor2.coeff = k + tensor1.coeff - w1 + w2;
+                for (int i=MAX_ORDER-1;i+powdiff>=0;i--) {
+                    tensor2.c[i] = tensor1.c[i] ^ tensor2.c[i+powdiff];
+                }
+                for (int i=-powdiff-1;i>=0;i--) {
                     tensor2.c[i] = tensor1.c[i];
                 }
             }
-            //first, lets change tensor1:
-            //which case are we in?
-            if (beta2 + gamma >= beta1) {
-                for (int i=0;i+beta2-beta1+gamma<MAX_ORDER;i++) {
-                    tensor1.a[i+beta2-beta1+gamma] ^= tensor2.a[i];
+            powdiff = k + w2 - w1;
+            if (powdiff >= 0) {
+                for (int i=powdiff;i<MAX_ORDER;i++) {
+                    tensor1.b[i] ^= tensor2.b[i-powdiff];
                 }
             } else {
-                change_coeff1 = true;
-                //shift t1.b by beta1-beta2-gamma then add t2.b to it
-                int ii=MAX_ORDER-1;
-                while (ii-beta1+beta2+gamma >= 0) {
-                    tensor1.a[ii] = tensor1.b[ii-beta1+beta2+gamma] ^ tensor2.a[ii];
-                    ii--;
+                tensor1.coeff += k + w2 - w1;
+                for (int i=MAX_ORDER-1;i+powdiff>=0;i--) {
+                    tensor1.b[i] = tensor2.b[i] ^ tensor1.b[i+powdiff];
                 }
-                while (ii >= 0) {
-                    tensor1.a[ii] = tensor2.a[ii];
-                    ii--;
-                }
-            }
-
-            //next, we change tensor2:
-            //which case are we in this time?
-            if (tensor1.coeff + beta2 - tensor2.coeff - beta1 + gamma >= 0) {
-                for (int i=0;i+beta2+tensor1.coeff+gamma-beta1<MAX_ORDER;i++) {
-                    tensor2.b[i+tensor1.coeff+beta2+gamma-beta1-tensor2.coeff] ^= tensor1.b[i];
-                }
-            } else {
-                change_coeff2 = true;
-                //shift t2.c by t2.coeff+beta1-t1.coeff-beta2-gamma then add t1.c to it
-                int i=MAX_ORDER-1;
-                while (i+tensor1.coeff+beta2+gamma-beta1-tensor2.coeff >= 0) {
-                    tensor2.b[i] = tensor2.b[i+tensor1.coeff+beta2+gamma-beta1-tensor2.coeff] ^ tensor1.b[i];
-                    i--;
-                }
-                while (i >= 0) {
-                    tensor2.b[i] = tensor1.b[i];
-                    i--;
+                for (int i=-powdiff-1;i>=0;i--) {
+                    tensor1.b[i] = tensor2.b[i];
                 }
             }
             break;
-    }
-    if (change_coeff2) {
-        tensor2.coeff = tensor1.coeff - beta1 + beta2 + gamma;
-    }
-    if (change_coeff1) {
-        tensor1.coeff = tensor1.coeff - beta1 + beta2 + gamma;
+        }
+        case 'b': {
+            int powdiff = k + tensor1.coeff + w2 - w1 - tensor2.coeff;
+            if (powdiff >= 0) {
+                for (int i=powdiff;i<MAX_ORDER;i++) {
+                    tensor2.a[i] ^= tensor1.a[i-powdiff];
+                }
+            } else {
+                tensor2.coeff = k + tensor1.coeff - w1 + w2;
+                for (int i=MAX_ORDER-1;i+powdiff>=0;i--) {
+                    tensor2.a[i] = tensor1.a[i] ^ tensor2.a[i+powdiff];
+                }
+                for (int i=-powdiff-1;i>=0;i--) {
+                    tensor2.a[i] = tensor1.a[i];
+                }
+            }
+            powdiff = k + w2 - w1;
+            if (powdiff >= 0) {
+                for (int i=powdiff;i<MAX_ORDER;i++) {
+                    tensor1.c[i] ^= tensor2.c[i-powdiff];
+                }
+            } else {
+                tensor1.coeff += k + w2 - w1;
+                for (int i=MAX_ORDER-1;i+powdiff>=0;i--) {
+                    tensor1.c[i] = tensor2.c[i] ^ tensor1.c[i+powdiff];
+                }
+                for (int i=-powdiff-1;i>=0;i--) {
+                    tensor1.c[i] = tensor2.c[i];
+                }
+            }
+            break;
+        }
+        case 'c': {
+            int powdiff = k + tensor1.coeff + w2 - w1 - tensor2.coeff;
+            if (powdiff >= 0) {
+                for (int i=powdiff;i<MAX_ORDER;i++) {
+                    tensor2.b[i] ^= tensor1.b[i-powdiff];
+                }
+            } else {
+                tensor2.coeff = k + tensor1.coeff - w1 + w2;
+                for (int i=MAX_ORDER-1;i+powdiff>=0;i--) {
+                    tensor2.b[i] = tensor1.b[i] ^ tensor2.b[i+powdiff];
+                }
+                for (int i=-powdiff-1;i>=0;i--) {
+                    tensor2.b[i] = tensor1.b[i];
+                }
+            }
+            powdiff = k + w2 - w1;
+            if (powdiff >= 0) {
+                for (int i=powdiff;i<MAX_ORDER;i++) {
+                    tensor1.a[i] ^= tensor2.a[i-powdiff];
+                }
+            } else {
+                tensor1.coeff += k + w2 - w1;
+                for (int i=MAX_ORDER-1;i+powdiff>=0;i--) {
+                    tensor1.a[i] = tensor2.a[i] ^ tensor1.a[i+powdiff];
+                }
+                for (int i=-powdiff-1;i>=0;i--) {
+                    tensor1.a[i] = tensor2.a[i];
+                }
+            }
+            break;
+        }
     }
     return update();
 }
 
 bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
-    // SOME COMPLICATED STUFF WILL GO HERE LATER
+    // LETS DO THIS!
     return update();
 }
 
@@ -526,8 +523,87 @@ void Scheme::random_walk(int pathlength) {
         tuple<int,int,int,char> next_flip = move_list[rand() % move_list.size()];
         //for now we suppose it will be a normal flip
         if (get<2>(next_flip) == -1) {
+            //cout << get<0>(next_flip) << get<1>(next_flip) << get<3>(next_flip) << endl;
             if (rand() % 2) flip(get<0>(next_flip),get<1>(next_flip),get<3>(next_flip));
             else flip(get<1>(next_flip),get<0>(next_flip),get<3>(next_flip));
+            //check();
+            //cout << endl; 
+            /*
+            for (int i=0;i<tensors.size();i++) {
+                Rank1Tensor& tensor = tensors[i];
+                if (i>0) {
+                    cout << "\n";
+                }
+                if (tensor.coeff > 0) {
+                    cout << "e";
+                    if (tensor.coeff > 1) {
+                        cout << "^" << to_string(tensor.coeff);
+                    }
+                    cout << "*";
+                }
+                bool first = true;
+                cout << "(";
+                for (int pow=0;pow<MAX_ORDER;pow++) {
+                    for (int j=0;j<N;j++) {
+                        if (tensor.a[pow][j]==1) {
+                            if (not first) {
+                                cout << "+";
+                            } else {
+                                first = false;
+                            }
+                            cout << "a" + to_string(j);
+                            if (pow > 0) {
+                                cout << "*e";
+                                if (pow > 1) {
+                                    cout << "*e^" << to_string(pow);
+                                }
+                            }
+                        }
+                    }
+                }
+                first = true;
+                cout << ")(";
+                for (int pow=0;pow<MAX_ORDER;pow++) {
+                    for (int j=0;j<N;j++) {
+                        if (tensor.b[pow][j]==1) {
+                            if (not first) {
+                                cout << "+";
+                            } else {
+                                first = false;
+                            }
+                            cout << "b" << to_string(j);
+                            if (pow > 0) {
+                                cout << "*e";
+                                if (pow > 1) {
+                                    cout << "*e^" << to_string(pow);
+                                }
+                            }
+                        }
+                    }
+                }
+                first = true;
+                cout << ")(";
+                for (int pow=0;pow<MAX_ORDER;pow++) {
+                    for (int j=0;j<N;j++) {
+                        if (tensor.c[pow][j]==1) {
+                            if (not first) {
+                                cout << "+";
+                            } else {
+                                first = false;
+                            }
+                            cout << "c" << to_string(j);
+                            if (pow > 0) {
+                                cout << "*e";
+                                if (pow > 1) {
+                                    cout << "*e^" << to_string(pow);
+                                }
+                            }
+                        }
+                    }
+                }
+                cout << ")";
+            }
+            cout << endl << endl;*/
         } else {
             //eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip));
         }

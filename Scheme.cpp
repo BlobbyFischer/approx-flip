@@ -281,7 +281,7 @@ void Scheme::write_to_file() {
                     if (pow > 0) {
                         output << "*e";
                         if (pow > 1) {
-                            output << "*e^" << to_string(pow);
+                            output << "^" << to_string(pow);
                         }
                     }
                 }
@@ -301,7 +301,7 @@ void Scheme::write_to_file() {
                     if (pow > 0) {
                         output << "*e";
                         if (pow > 1) {
-                            output << "*e^" << to_string(pow);
+                            output << "^" << to_string(pow);
                         }
                     }
                 }
@@ -321,7 +321,7 @@ void Scheme::write_to_file() {
                     if (pow > 0) {
                         output << "*e";
                         if (pow > 1) {
-                            output << "*e^" << to_string(pow);
+                            output << "^" << to_string(pow);
                         }
                     }
                 }
@@ -512,9 +512,97 @@ bool Scheme::flip(int ind1, int ind2, char flip_around) {
     return update();
 }
 
+/*
+
+EXPLANATION FOR EFLIPS
+
+e^x a1.b1.c1
+e^y a1+e^q a2.b1+e^q b2.c2
+ ||
+_||_
+\  /
+ \/
+a1.b1.e^x c1
+a1+e^q a2.b1+e^q b2.e^y c2
+ ||
+_||_
+\  /
+ \/
+a1.b1.e^x c1 + e^(MAX_ORDER - q) g
+a1+e^q a2.b1+e^q b2.e^y c2 + e^(MAX_ORDER - q) g
+ ||
+_||_
+\  /
+ \/
+e^x a1.b1.c1 + e^(MAX_ORDER - q - x) g
+e^y a1+e^q a2.b1+e^q b2.c2 + e^(MAX_ORDER - q - y) g
+
+
+And we choose g sensibly, such that c1+e^(MAX_ORDER-q-x) g = c3
+where tensors contains e^z a3.b3.c3
+and then we do a flip.
+
+*/
+
 bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
-    // LETS DO THIS!
-    return update();
+    cout << "eflip" << endl;
+    Rank1Tensor& tensor1 = tensors[ind1];
+    Rank1Tensor& tensor2 = tensors[ind2];
+    Rank1Tensor& tensor3 = tensors[ind3];
+    bitset<N> shifted_g[MAX_ORDER];
+    switch(flip_around) {
+        case 'a':{
+            // first we calculate e^(MAX_ORDER-q-x)g
+            for (int i=0;i<MAX_ORDER;i++) { 
+            // note the redundancy: we know the first few of these will be 0 since tensor1.c and tensor3.c are equal up to some point. Could improve code by passing eqc and using that here
+                shifted_g[i] = tensor1.a[i] ^ tensor3.a[i];
+            }
+            // now we have to add it to tensor2.c
+            // note we know shifting g further will work nicely because else we would have reduced it earlier
+            int start=0;
+            if (tensor1.coeff-tensor2.coeff<0) {
+                start = tensor2.coeff-tensor1.coeff;
+            }
+            for (int i=start;i<MAX_ORDER and i+tensor1.coeff-tensor2.coeff<MAX_ORDER;i++) {
+                tensor2.a[i] ^= shifted_g[i+tensor1.coeff-tensor2.coeff];
+            }
+        }
+        case 'b':{
+            // first we calculate e^(MAX_ORDER-q-x)g
+            for (int i=0;i<MAX_ORDER;i++) { 
+            // note the redundancy: we know the first few of these will be 0 since tensor1.c and tensor3.c are equal up to some point. Could improve code by passing eqc and using that here
+                shifted_g[i] = tensor1.b[i] ^ tensor3.b[i];
+            }
+            // now we have to add it to tensor2.c
+            // note we know shifting g further will work nicely because else we would have reduced it earlier
+            int start=0;
+            if (tensor1.coeff-tensor2.coeff<0) {
+                start = tensor2.coeff-tensor1.coeff;
+            }
+            for (int i=start;i<MAX_ORDER and i+tensor1.coeff-tensor2.coeff<MAX_ORDER;i++) {
+                tensor2.b[i] ^= shifted_g[i+tensor1.coeff-tensor2.coeff];
+            }
+        }
+        case 'c':{
+            // first we calculate e^(MAX_ORDER-q-x)g
+            for (int i=0;i<MAX_ORDER;i++) { 
+            // note the redundancy: we know the first few of these will be 0 since tensor1.c and tensor3.c are equal up to some point. Could improve code by passing eqc and using that here
+                shifted_g[i] = tensor1.c[i] ^ tensor3.c[i];
+            }
+            // now we have to add it to tensor2.c
+            // note we know shifting g further will work nicely because else we would have reduced it earlier
+            int start=0;
+            if (tensor1.coeff-tensor2.coeff<0) {
+                start = tensor2.coeff-tensor1.coeff;
+            }
+            for (int i=start;i<MAX_ORDER and i+tensor1.coeff-tensor2.coeff<MAX_ORDER;i++) {
+                tensor2.c[i] ^= shifted_g[i+tensor1.coeff-tensor2.coeff];
+            }
+        }
+    }
+    //now do a flip
+    if (rand()%2==0) return flip(ind1,ind3,flip_around);
+    else return flip(ind3,ind1,flip_around);
 }
 
 void Scheme::random_walk(int pathlength) {
@@ -605,7 +693,7 @@ void Scheme::random_walk(int pathlength) {
             }
             cout << endl << endl;*/
         } else {
-            //eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip));
+            eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip));
         }
     }
 }

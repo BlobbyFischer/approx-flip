@@ -19,8 +19,5 @@ int main(int argc, char* argv[])
     scheme.random_walk(pathlength);
     scheme.write_to_file();
     scheme.check();
-    /*for (tuple<int,int,int,char> move : scheme.move_list) {
-        cout << get<0>(move) << get<1>(move) << get<2>(move) << get<3>(move) << endl;
-    }*/
     return 0;
 }

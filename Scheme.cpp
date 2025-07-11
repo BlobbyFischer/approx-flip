@@ -545,7 +545,7 @@ and then we do a flip.
 */
 
 bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
-    cout << "eflip" << endl;
+    //cout << "eflip" << endl;
     Rank1Tensor& tensor1 = tensors[ind1];
     Rank1Tensor& tensor2 = tensors[ind2];
     Rank1Tensor& tensor3 = tensors[ind3];
@@ -556,6 +556,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
             for (int i=0;i<MAX_ORDER;i++) { 
             // note the redundancy: we know the first few of these will be 0 since tensor1.c and tensor3.c are equal up to some point. Could improve code by passing eqc and using that here
                 shifted_g[i] = tensor1.a[i] ^ tensor3.a[i];
+                tensor1.a[i] = tensor3.a[i];
             }
             // now we have to add it to tensor2.c
             // note we know shifting g further will work nicely because else we would have reduced it earlier
@@ -572,6 +573,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
             for (int i=0;i<MAX_ORDER;i++) { 
             // note the redundancy: we know the first few of these will be 0 since tensor1.c and tensor3.c are equal up to some point. Could improve code by passing eqc and using that here
                 shifted_g[i] = tensor1.b[i] ^ tensor3.b[i];
+                tensor1.b[i] = tensor3.b[i];
             }
             // now we have to add it to tensor2.c
             // note we know shifting g further will work nicely because else we would have reduced it earlier
@@ -588,6 +590,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
             for (int i=0;i<MAX_ORDER;i++) { 
             // note the redundancy: we know the first few of these will be 0 since tensor1.c and tensor3.c are equal up to some point. Could improve code by passing eqc and using that here
                 shifted_g[i] = tensor1.c[i] ^ tensor3.c[i];
+                tensor1.c[i] = tensor3.c[i];
             }
             // now we have to add it to tensor2.c
             // note we know shifting g further will work nicely because else we would have reduced it earlier
@@ -693,7 +696,7 @@ void Scheme::random_walk(int pathlength) {
             }
             cout << endl << endl;*/
         } else {
-            eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip));
+            //eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip));
         }
     }
 }

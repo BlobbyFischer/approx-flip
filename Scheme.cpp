@@ -544,7 +544,7 @@ and then we do a flip.
 
 */
 
-bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
+bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) { // flipping around c works, but not the others... I wonder why...
     //cout << "eflip" << endl;
     Rank1Tensor& tensor1 = tensors[ind1];
     Rank1Tensor& tensor2 = tensors[ind2];
@@ -567,6 +567,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
             for (int i=start;i<MAX_ORDER and i+tensor1.coeff-tensor2.coeff<MAX_ORDER;i++) {
                 tensor2.a[i] ^= shifted_g[i+tensor1.coeff-tensor2.coeff];
             }
+            break;
         }
         case 'b':{
             // first we calculate e^(MAX_ORDER-q-x)g
@@ -584,6 +585,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
             for (int i=start;i<MAX_ORDER and i+tensor1.coeff-tensor2.coeff<MAX_ORDER;i++) {
                 tensor2.b[i] ^= shifted_g[i+tensor1.coeff-tensor2.coeff];
             }
+            break;
         }
         case 'c':{
             // first we calculate e^(MAX_ORDER-q-x)g
@@ -601,6 +603,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
             for (int i=start;i<MAX_ORDER and i+tensor1.coeff-tensor2.coeff<MAX_ORDER;i++) {
                 tensor2.c[i] ^= shifted_g[i+tensor1.coeff-tensor2.coeff];
             }
+            break;
         }
     }
     //now do a flip
@@ -608,7 +611,86 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) {
     else return flip(ind3,ind1,flip_around);
 }
 
+void Scheme::print() {
+    for (int i=0;i<tensors.size();i++) {
+        Rank1Tensor& tensor = tensors[i];
+        if (i>0) {
+            cout << "\n";
+        }
+        if (tensor.coeff > 0) {
+            cout << "e";
+            if (tensor.coeff > 1) {
+                cout << "^" << to_string(tensor.coeff);
+            }
+            cout << "*";
+        }
+        bool first = true;
+        cout << "(";
+        for (int pow=0;pow<MAX_ORDER;pow++) {
+            for (int j=0;j<N;j++) {
+                if (tensor.a[pow][j]==1) {
+                    if (not first) {
+                        cout << "+";
+                    } else {
+                        first = false;
+                    }
+                    cout << "a" + to_string(j);
+                    if (pow > 0) {
+                        cout << "*e";
+                        if (pow > 1) {
+                            cout << "^" << to_string(pow);
+                        }
+                    }
+                }
+            }
+        }
+        first = true;
+        cout << ")(";
+        for (int pow=0;pow<MAX_ORDER;pow++) {
+            for (int j=0;j<N;j++) {
+                if (tensor.b[pow][j]==1) {
+                    if (not first) {
+                        cout << "+";
+                    } else {
+                        first = false;
+                    }
+                    cout << "b" << to_string(j);
+                    if (pow > 0) {
+                        cout << "*e";
+                        if (pow > 1) {
+                            cout << "^" << to_string(pow);
+                        }
+                    }
+                }
+            }
+        }
+        first = true;
+        cout << ")(";
+        for (int pow=0;pow<MAX_ORDER;pow++) {
+            for (int j=0;j<N;j++) {
+                if (tensor.c[pow][j]==1) {
+                    if (not first) {
+                        cout << "+";
+                    } else {
+                        first = false;
+                    }
+                    cout << "c" << to_string(j);
+                    if (pow > 0) {
+                        cout << "*e";
+                        if (pow > 1) {
+                            cout << "^" << to_string(pow);
+                        }
+                    }
+                }
+            }
+        }
+        cout << ")";
+    }
+    cout << endl << endl;
+}
+
 void Scheme::random_walk(int pathlength) {
+    Scheme compare_against = expanded(*this);
     for (int i=0;i<pathlength;i++) {
         if (move_list.size() == 0) break;
         tuple<int,int,int,char> next_flip = move_list[rand() % move_list.size()];
@@ -618,91 +700,29 @@ void Scheme::random_walk(int pathlength) {
             if (rand() % 2) flip(get<0>(next_flip),get<1>(next_flip),get<3>(next_flip));
             else flip(get<1>(next_flip),get<0>(next_flip),get<3>(next_flip));
             //check();
-            //cout << endl; 
-            /*
-            for (int i=0;i<tensors.size();i++) {
-                Rank1Tensor& tensor = tensors[i];
-                if (i>0) {
-                    cout << "\n";
-                }
-                if (tensor.coeff > 0) {
-                    cout << "e";
-                    if (tensor.coeff > 1) {
-                        cout << "^" << to_string(tensor.coeff);
-                    }
-                    cout << "*";
-                }
-                bool first = true;
-                cout << "(";
-                for (int pow=0;pow<MAX_ORDER;pow++) {
-                    for (int j=0;j<N;j++) {
-                        if (tensor.a[pow][j]==1) {
-                            if (not first) {
-                                cout << "+";
-                            } else {
-                                first = false;
-                            }
-                            cout << "a" + to_string(j);
-                            if (pow > 0) {
-                                cout << "*e";
-                                if (pow > 1) {
-                                    cout << "*e^" << to_string(pow);
-                                }
-                            }
-                        }
-                    }
-                }
-                first = true;
-                cout << ")(";
-                for (int pow=0;pow<MAX_ORDER;pow++) {
-                    for (int j=0;j<N;j++) {
-                        if (tensor.b[pow][j]==1) {
-                            if (not first) {
-                                cout << "+";
-                            } else {
-                                first = false;
-                            }
-                            cout << "b" << to_string(j);
-                            if (pow > 0) {
-                                cout << "*e";
-                                if (pow > 1) {
-                                    cout << "*e^" << to_string(pow);
-                                }
-                            }
-                        }
-                    }
-                }
-                first = true;
-                cout << ")(";
-                for (int pow=0;pow<MAX_ORDER;pow++) {
-                    for (int j=0;j<N;j++) {
-                        if (tensor.c[pow][j]==1) {
-                            if (not first) {
-                                cout << "+";
-                            } else {
-                                first = false;
-                            }
-                            cout << "c" << to_string(j);
-                            if (pow > 0) {
-                                cout << "*e";
-                                if (pow > 1) {
-                                    cout << "*e^" << to_string(pow);
-                                }
-                            }
-                        }
-                    }
-                }
-                cout << ")";
-            }
-            cout << endl << endl;*/
+            //print();
         } else {
-            //eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip));
+            print();
+            cout << get<0>(next_flip) << get<1>(next_flip) << get<2>(next_flip) << get<3>(next_flip) << endl;
+            eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip));
+            print();
+            cout << endl;
+        }
+        Scheme new_compare_against = expanded(*this);
+        if (compare_against.tensors.size() != new_compare_against.tensors.size()) {
+            cerr << "ERROR HERE";
+            return;
+        }
+        for (int j=0;j<compare_against.tensors.size();j++) {
+            if (compare_against.tensors[j].a[0] != new_compare_against.tensors[j].a[0] || compare_against.tensors[j].b[0] != new_compare_against.tensors[j].b[0] || compare_against.tensors[j].c[0] != new_compare_against.tensors[j].c[0] || compare_against.tensors[j].coeff != new_compare_against.tensors[j].coeff) {
+                cerr << "ERROR HERE";
+                return;
+            }
         }
     }
 }
 
-void Scheme::check()
-{
+void Scheme::check() {
     for (int pow=0;pow<MAX_ORDER;pow++) {
         for (int i=0;i<N;i++) {
             for (int j=0;j<N;j++) {
@@ -725,4 +745,36 @@ void Scheme::check()
             }
         }
     }
+}
+
+Scheme expanded(Scheme input_scheme) {
+    Scheme output;
+    for (int pow=0;pow<MAX_ORDER;pow++) {
+        for (int i=0;i<N;i++) {
+            for (int j=0;j<N;j++) {
+                for (int k=0;k<N;k++) {
+                    int counter = 0;
+                    for (int ind=0;ind<input_scheme.tensors.size();ind++) {
+                        Rank1Tensor tensor = input_scheme.tensors[ind];
+                        for (int pow1=0;pow1<=pow;pow1++) {
+                            for (int pow2=0;pow1+pow2+tensor.coeff<=pow;pow2++){
+                                if (tensor.a[pow1][i] and tensor.b[pow2][j] and tensor.c[pow-pow1-pow2-tensor.coeff][k]){
+                                    counter = 1-counter;
+                                }
+                            }
+                        }
+                    }
+                    if (counter == 1) {
+                        Rank1Tensor new_tensor;
+                        new_tensor.a[0].set(i);
+                        new_tensor.b[0].set(j);
+                        new_tensor.c[0].set(k);
+                        new_tensor.coeff = pow;
+                        output.tensors.push_back(new_tensor);
+                    }
+                }
+            }
+        }
+    }
+    return output;
 }

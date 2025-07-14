@@ -24,8 +24,11 @@ public:
     void random_walk(int pathlength);
 
     void write_to_file();
+    void print();
 
     void check();
 };
+
+Scheme expanded(Scheme input_scheme);
 
 #endif // SCHEME_H

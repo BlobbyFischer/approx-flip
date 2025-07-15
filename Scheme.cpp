@@ -31,28 +31,17 @@ bool Scheme::update() {
             Rank1Tensor& tensor2 = tensors[j];
             // aeq, beq, ceq to help with future things
             int aeq = 0;
-            while (tensor1.a[aeq] == tensor2.a[aeq]) {
-                aeq++;
-            }
+            while (tensor1.a[aeq] == tensor2.a[aeq]) aeq++;
             int beq = 0;
-            while (tensor1.b[beq] == tensor2.b[beq]) {
-                beq++;
-            }
+            while (tensor1.b[beq] == tensor2.b[beq]) beq++;
             int ceq = 0;
-            while (tensor1.c[ceq] == tensor2.c[ceq]) {
-                ceq++;
-            }
+            while (tensor1.c[ceq] == tensor2.c[ceq]) ceq++;
             // is there a flip?
-            if (aeq >= MAX_ORDER - tensor1.coeff or aeq >= MAX_ORDER - tensor2.coeff) {
-                move_list.push_back(tuple<int,int,int,char>(i,j,-1,'a')); // -1 means its a normal flip
-            }
-            if (beq >= MAX_ORDER - tensor1.coeff or beq >= MAX_ORDER - tensor2.coeff) {
-                move_list.push_back(tuple<int,int,int,char>(i,j,-1,'b'));
-            }
-            if (ceq >= MAX_ORDER - tensor1.coeff or ceq >= MAX_ORDER - tensor2.coeff) {
-                move_list.push_back(tuple<int,int,int,char>(i,j,-1,'c'));
-            }
+            if (aeq >= MAX_ORDER - tensor1.coeff or aeq >= MAX_ORDER - tensor2.coeff) move_list.push_back(tuple<int,int,int,char>(i,j,-1,'a')); // -1 means its a normal flip
+            if (beq >= MAX_ORDER - tensor1.coeff or beq >= MAX_ORDER - tensor2.coeff) move_list.push_back(tuple<int,int,int,char>(i,j,-1,'b'));
+            if (ceq >= MAX_ORDER - tensor1.coeff or ceq >= MAX_ORDER - tensor2.coeff) move_list.push_back(tuple<int,int,int,char>(i,j,-1,'c'));
             // a SENSIBLE eflip? i.e an eflip that can be followed by a NEW flip (this tells us what our choice of Gamma' should be)
+            // THE EFLIP REDUCTIONS DON'T WORK YET, EVERYTHING ELSE DOES THOUGH
             if (beq>0 && ceq>0) {
                 // does this lead to a reduction?
                 int min_eq = min(beq,ceq);
@@ -60,14 +49,10 @@ bool Scheme::update() {
                 if (MAX_ORDER - min_eq <= min_coeff) { // is this the most general? or are there other cases as well? Maybe max_coeff instead?
                     int powdiff = tensor1.coeff - tensor2.coeff;
                     if (powdiff < 0) {
-                        for (int ii=0;ii-powdiff<MAX_ORDER-tensor1.coeff;ii++) {
-                            tensor1.a[ii-powdiff] ^= tensor2.a[ii];
-                        }
+                        for (int ii=0;ii-powdiff<MAX_ORDER-tensor1.coeff;ii++) tensor1.a[ii-powdiff] ^= tensor2.a[ii];
                         tensors.erase(tensors.begin()+j);
                     } else {
-                        for (int ii=0;ii+powdiff<MAX_ORDER-tensor2.coeff;ii++) {
-                            tensor2.a[ii+powdiff] ^= tensor1.a[ii];
-                        }
+                        for (int ii=0;ii+powdiff<MAX_ORDER-tensor2.coeff;ii++) tensor2.a[ii+powdiff] ^= tensor1.a[ii];
                         tensors.erase(tensors.begin()+i);
                     }
                     update();
@@ -79,26 +64,17 @@ bool Scheme::update() {
                 while (k<tensors.size()) {
                     while (k==i or k==j) {
                         k++;
-                        if (k>=tensors.size()) {
-                            break; // we are done in the while loop
-                        }
+                        if (k>=tensors.size()) break; // we are done in the while loops
                     }
+                    if (k>=tensors.size()) break;
                     Rank1Tensor& tensor3 = tensors[k];
                     // so is tensor3 a good choice?
                     int aeq1 = 0;
-                    while (tensor1.a[aeq1] == tensor3.a[aeq1]) {
-                        aeq1++;
-                    }
+                    while (tensor1.a[aeq1] == tensor3.a[aeq1]) aeq1++;
                     int aeq2 = 0;
-                    while (tensor2.a[aeq2] == tensor3.a[aeq2]) {
-                        aeq2++;
-                    }
-                    if (aeq1 >= MAX_ORDER - min_eq - min_coeff) {
-                        move_list.push_back(tuple<int,int,int,char>(i,j,k,'a'));
-                    }
-                    if (aeq2 >= MAX_ORDER - min_eq - min_coeff) {
-                        move_list.push_back(tuple<int,int,int,char>(j,i,k,'a'));
-                    }
+                    while (tensor2.a[aeq2] == tensor3.a[aeq2]) aeq2++;
+                    if (aeq1 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(i,j,k,'a'));
+                    if (aeq2 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(j,i,k,'a'));
                     k++;
                 }
             }
@@ -110,14 +86,10 @@ bool Scheme::update() {
                 if (MAX_ORDER - min_eq <= min_coeff) { // is this the most general? or are there other cases as well? Maybe max_coeff instead?
                     int powdiff = tensor1.coeff - tensor2.coeff;
                     if (powdiff < 0) {
-                        for (int ii=0;ii-powdiff<MAX_ORDER-tensor1.coeff;ii++) {
-                            tensor1.b[ii-powdiff] ^= tensor2.b[ii];
-                        }
+                        for (int ii=0;ii-powdiff<MAX_ORDER-tensor1.coeff;ii++) tensor1.b[ii-powdiff] ^= tensor2.b[ii];
                         tensors.erase(tensors.begin()+j);
                     } else {
-                        for (int ii=0;ii+powdiff<MAX_ORDER-tensor2.coeff;ii++) {
-                            tensor2.b[ii+powdiff] ^= tensor1.b[ii];
-                        }
+                        for (int ii=0;ii+powdiff<MAX_ORDER-tensor2.coeff;ii++) tensor2.b[ii+powdiff] ^= tensor1.b[ii];
                         tensors.erase(tensors.begin()+i);
                     }
                     //cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
@@ -129,26 +101,17 @@ bool Scheme::update() {
                 while (k<tensors.size()) {
                     while (k==i or k==j) {
                         k++;
-                        if (k>=tensors.size()) {
-                            break; // we are done in the while loop
-                        }
+                        if (k>=tensors.size()) break; // we are done in the while loops
                     }
+                    if (k>=tensors.size()) break;
                     Rank1Tensor& tensor3 = tensors[k];
                     // so is tensor3 a good choice?
                     int beq1 = 0;
-                    while (tensor1.b[beq1] == tensor3.b[beq1]) {
-                        beq1++;
-                    }
+                    while (tensor1.b[beq1] == tensor3.b[beq1]) beq1++;
                     int beq2 = 0;
-                    while (tensor2.b[beq2] == tensor3.b[beq2]) {
-                        beq2++;
-                    }
-                    if (beq1 >= MAX_ORDER - min_eq - min_coeff) {
-                        move_list.push_back(tuple<int,int,int,char>(i,j,k,'b'));
-                    }
-                    if (beq2 >= MAX_ORDER - min_eq - min_coeff) {
-                        move_list.push_back(tuple<int,int,int,char>(j,i,k,'b'));
-                    }
+                    while (tensor2.b[beq2] == tensor3.b[beq2]) beq2++;
+                    if (beq1 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(i,j,k,'b'));
+                    if (beq2 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(j,i,k,'b'));
                     k++;
                 }
             }
@@ -159,18 +122,16 @@ bool Scheme::update() {
                 if (MAX_ORDER - min_eq <= min_coeff) { // is this the most general? or are there other cases as well? Maybe max_coeff instead?
                     int powdiff = tensor1.coeff - tensor2.coeff;
                     if (powdiff < 0) {
-                        for (int ii=0;ii-powdiff<MAX_ORDER-tensor1.coeff;ii++) {
-                            tensor1.c[ii-powdiff] ^= tensor2.c[ii];
-                        }
+                        for (int ii=0;ii-powdiff<MAX_ORDER-tensor1.coeff;ii++) tensor1.c[ii-powdiff] ^= tensor2.c[ii];
                         tensors.erase(tensors.begin()+j);
                     } else {
-                        for (int ii=0;ii+powdiff<MAX_ORDER-tensor2.coeff;ii++) {
-                            tensor2.c[ii+powdiff] ^= tensor1.c[ii];
-                        }
+                        for (int ii=0;ii+powdiff<MAX_ORDER-tensor2.coeff;ii++) tensor2.c[ii+powdiff] ^= tensor1.c[ii];
                         tensors.erase(tensors.begin()+i);
                     }
-                    //cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
+                    cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
                     update();
+                    check();
+                    
                     return true;
                 }
                 // is there a third tensor which might go well with either of them?
@@ -178,26 +139,17 @@ bool Scheme::update() {
                 while (k<tensors.size()) {
                     while (k==i or k==j) {
                         k++;
-                        if (k>=tensors.size()) {
-                            break; // we are done in the while loop
-                        }
+                        if (k>=tensors.size()) break; // we are done in the while loop
                     }
+                    if (k>=tensors.size()) break;
                     Rank1Tensor& tensor3 = tensors[k];
                     // so is tensor3 a good choice?
                     int ceq1 = 0;
-                    while (tensor1.c[ceq1] == tensor3.c[ceq1]) {
-                        ceq1++;
-                    }
+                    while (tensor1.c[ceq1] == tensor3.c[ceq1]) ceq1++;
                     int ceq2 = 0;
-                    while (tensor2.c[ceq2] == tensor3.c[ceq2]) {
-                        ceq2++;
-                    }
-                    if (ceq1 >= MAX_ORDER - min_eq - min_coeff) {
-                        move_list.push_back(tuple<int,int,int,char>(i,j,k,'c'));
-                    }
-                    if (ceq2 >= MAX_ORDER - min_eq - min_coeff) {
-                        move_list.push_back(tuple<int,int,int,char>(j,i,k,'c'));
-                    }
+                    while (tensor2.c[ceq2] == tensor3.c[ceq2]) ceq2++;
+                    if (ceq1 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(i,j,k,'c'));
+                    if (ceq2 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(j,i,k,'c'));
                     k++;
                 }
             }
@@ -565,7 +517,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) { // flipping
                 start = tensor2.coeff-tensor1.coeff;
             }
             for (int i=start;i<MAX_ORDER and i+tensor1.coeff-tensor2.coeff<MAX_ORDER;i++) {
-                tensor2.a[i] ^= shifted_g[i+tensor1.coeff-tensor2.coeff];
+                tensor2.a[i+tensor1.coeff-tensor2.coeff] ^= shifted_g[i];
             }
             break;
         }
@@ -583,7 +535,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) { // flipping
                 start = tensor2.coeff-tensor1.coeff;
             }
             for (int i=start;i<MAX_ORDER and i+tensor1.coeff-tensor2.coeff<MAX_ORDER;i++) {
-                tensor2.b[i] ^= shifted_g[i+tensor1.coeff-tensor2.coeff];
+                tensor2.b[i+tensor1.coeff-tensor2.coeff] ^= shifted_g[i];
             }
             break;
         }
@@ -601,7 +553,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) { // flipping
                 start = tensor2.coeff-tensor1.coeff;
             }
             for (int i=start;i<MAX_ORDER and i+tensor1.coeff-tensor2.coeff<MAX_ORDER;i++) {
-                tensor2.c[i] ^= shifted_g[i+tensor1.coeff-tensor2.coeff];
+                tensor2.c[i+tensor1.coeff-tensor2.coeff] ^= shifted_g[i];
             }
             break;
         }
@@ -690,25 +642,21 @@ void Scheme::print() {
 }
 
 void Scheme::random_walk(int pathlength) {
-    Scheme compare_against = expanded(*this);
+    //Scheme compare_against = expanded(*this);
     for (int i=0;i<pathlength;i++) {
         if (move_list.size() == 0) break;
         tuple<int,int,int,char> next_flip = move_list[rand() % move_list.size()];
-        //for now we suppose it will be a normal flip
+        //print();
+        //cout << get<0>(next_flip) << get<1>(next_flip) << get<2>(next_flip) << get<3>(next_flip) << endl;
         if (get<2>(next_flip) == -1) {
-            //cout << get<0>(next_flip) << get<1>(next_flip) << get<3>(next_flip) << endl;
             if (rand() % 2) flip(get<0>(next_flip),get<1>(next_flip),get<3>(next_flip));
             else flip(get<1>(next_flip),get<0>(next_flip),get<3>(next_flip));
-            //check();
-            //print();
         } else {
-            print();
-            cout << get<0>(next_flip) << get<1>(next_flip) << get<2>(next_flip) << get<3>(next_flip) << endl;
             eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip));
-            print();
-            cout << endl;
         }
-        Scheme new_compare_against = expanded(*this);
+        //print();
+        //cout << endl;
+        /*Scheme new_compare_against = expanded(*this);
         if (compare_against.tensors.size() != new_compare_against.tensors.size()) {
             cerr << "ERROR HERE";
             return;
@@ -718,7 +666,7 @@ void Scheme::random_walk(int pathlength) {
                 cerr << "ERROR HERE";
                 return;
             }
-        }
+        }*/
     }
 }
 

@@ -45,15 +45,16 @@ bool Scheme::update() {
             if (beq>0 && ceq>0) {
                 // does this lead to a reduction?
                 int min_eq = min(beq,ceq);
-                int min_coeff = min(tensor1.coeff,tensor2.coeff);
-                if (MAX_ORDER - min_eq <= min_coeff) { // is this the most general? or are there other cases as well? Maybe max_coeff instead?
-                    int powdiff = tensor1.coeff - tensor2.coeff;
-                    if (powdiff < 0) {
-                        for (int ii=0;ii-powdiff<MAX_ORDER-tensor1.coeff;ii++) tensor1.a[ii-powdiff] ^= tensor2.a[ii];
-                        tensors.erase(tensors.begin()+j);
-                    } else {
-                        for (int ii=0;ii+powdiff<MAX_ORDER-tensor2.coeff;ii++) tensor2.a[ii+powdiff] ^= tensor1.a[ii];
+                int max_coeff = max(tensor1.coeff,tensor2.coeff);
+                if (MAX_ORDER - min_eq <= max_coeff) { 
+                    if (tensor1.coeff == max_coeff) { // then we need to reduce tensor1
+                        int powdiff = tensor1.coeff - tensor2.coeff;
+                        for (int ii=0;ii+powdiff < MAX_ORDER-tensor2.coeff;ii++) tensor2.a[ii+powdiff] ^= tensor1.a[ii];
                         tensors.erase(tensors.begin()+i);
+                    } else { // then we need to reduce tensor2
+                        int powdiff = tensor2.coeff - tensor1.coeff;
+                        for (int ii=0;ii+powdiff < MAX_ORDER-tensor1.coeff;ii++) tensor1.a[ii+powdiff] ^= tensor2.a[ii];
+                        tensors.erase(tensors.begin()+j);
                     }
                     update();
                     //cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
@@ -73,8 +74,8 @@ bool Scheme::update() {
                     while (tensor1.a[aeq1] == tensor3.a[aeq1]) aeq1++;
                     int aeq2 = 0;
                     while (tensor2.a[aeq2] == tensor3.a[aeq2]) aeq2++;
-                    if (aeq1 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(i,j,k,'a'));
-                    if (aeq2 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(j,i,k,'a'));
+                    if (aeq1 >= MAX_ORDER - min_eq - tensor1.coeff) move_list.push_back(tuple<int,int,int,char>(i,j,k,'a'));
+                    if (aeq2 >= MAX_ORDER - min_eq - tensor2.coeff) move_list.push_back(tuple<int,int,int,char>(j,i,k,'a'));
                     k++;
                 }
             }
@@ -82,18 +83,19 @@ bool Scheme::update() {
             if (aeq>0 && ceq>0) {
                 // does this lead to a reduction?
                 int min_eq = min(aeq,ceq);
-                int min_coeff = min(tensor1.coeff,tensor2.coeff);
-                if (MAX_ORDER - min_eq <= min_coeff) { // is this the most general? or are there other cases as well? Maybe max_coeff instead?
-                    int powdiff = tensor1.coeff - tensor2.coeff;
-                    if (powdiff < 0) {
-                        for (int ii=0;ii-powdiff<MAX_ORDER-tensor1.coeff;ii++) tensor1.b[ii-powdiff] ^= tensor2.b[ii];
-                        tensors.erase(tensors.begin()+j);
-                    } else {
-                        for (int ii=0;ii+powdiff<MAX_ORDER-tensor2.coeff;ii++) tensor2.b[ii+powdiff] ^= tensor1.b[ii];
+                int max_coeff = max(tensor1.coeff,tensor2.coeff);
+                if (MAX_ORDER - min_eq <= max_coeff) { 
+                    if (tensor1.coeff == max_coeff) { // then we need to reduce tensor1
+                        int powdiff = tensor1.coeff - tensor2.coeff;
+                        for (int ii=0;ii+powdiff < MAX_ORDER-tensor2.coeff;ii++) tensor2.b[ii+powdiff] ^= tensor1.b[ii];
                         tensors.erase(tensors.begin()+i);
+                    } else { // then we need to reduce tensor2
+                        int powdiff = tensor2.coeff - tensor1.coeff;
+                        for (int ii=0;ii+powdiff < MAX_ORDER-tensor1.coeff;ii++) tensor1.b[ii+powdiff] ^= tensor2.b[ii];
+                        tensors.erase(tensors.begin()+j);
                     }
-                    //cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
                     update();
+                    //cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
                     return true;
                 }
                 // is there a third tensor which might go well with either of them?
@@ -110,28 +112,27 @@ bool Scheme::update() {
                     while (tensor1.b[beq1] == tensor3.b[beq1]) beq1++;
                     int beq2 = 0;
                     while (tensor2.b[beq2] == tensor3.b[beq2]) beq2++;
-                    if (beq1 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(i,j,k,'b'));
-                    if (beq2 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(j,i,k,'b'));
+                    if (beq1 >= MAX_ORDER - min_eq - tensor1.coeff) move_list.push_back(tuple<int,int,int,char>(i,j,k,'b'));
+                    if (beq2 >= MAX_ORDER - min_eq - tensor2.coeff) move_list.push_back(tuple<int,int,int,char>(j,i,k,'b'));
                     k++;
                 }
             }
             if (aeq>0 && beq>0) {
                 // does this lead to a reduction?
                 int min_eq = min(aeq,beq);
-                int min_coeff = min(tensor1.coeff,tensor2.coeff);
-                if (MAX_ORDER - min_eq <= min_coeff) { // is this the most general? or are there other cases as well? Maybe max_coeff instead?
-                    int powdiff = tensor1.coeff - tensor2.coeff;
-                    if (powdiff < 0) {
-                        for (int ii=0;ii-powdiff<MAX_ORDER-tensor1.coeff;ii++) tensor1.c[ii-powdiff] ^= tensor2.c[ii];
-                        tensors.erase(tensors.begin()+j);
-                    } else {
-                        for (int ii=0;ii+powdiff<MAX_ORDER-tensor2.coeff;ii++) tensor2.c[ii+powdiff] ^= tensor1.c[ii];
+                int max_coeff = max(tensor1.coeff,tensor2.coeff);
+                if (MAX_ORDER - min_eq <= max_coeff) { 
+                    if (tensor1.coeff == max_coeff) { // then we need to reduce tensor1
+                        int powdiff = tensor1.coeff - tensor2.coeff;
+                        for (int ii=0;ii+powdiff < MAX_ORDER-tensor2.coeff;ii++) tensor2.c[ii+powdiff] ^= tensor1.c[ii];
                         tensors.erase(tensors.begin()+i);
+                    } else { // then we need to reduce tensor2
+                        int powdiff = tensor2.coeff - tensor1.coeff;
+                        for (int ii=0;ii+powdiff < MAX_ORDER-tensor1.coeff;ii++) tensor1.c[ii+powdiff] ^= tensor2.c[ii];
+                        tensors.erase(tensors.begin()+j);
                     }
-                    cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
                     update();
-                    check();
-                    
+                    //cout << endl << endl << endl << "eflip reduction" << endl << endl << endl;
                     return true;
                 }
                 // is there a third tensor which might go well with either of them?
@@ -148,8 +149,8 @@ bool Scheme::update() {
                     while (tensor1.c[ceq1] == tensor3.c[ceq1]) ceq1++;
                     int ceq2 = 0;
                     while (tensor2.c[ceq2] == tensor3.c[ceq2]) ceq2++;
-                    if (ceq1 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(i,j,k,'c'));
-                    if (ceq2 >= MAX_ORDER - min_eq - min_coeff) move_list.push_back(tuple<int,int,int,char>(j,i,k,'c'));
+                    if (ceq1 >= MAX_ORDER - min_eq - tensor1.coeff) move_list.push_back(tuple<int,int,int,char>(i,j,k,'c'));
+                    if (ceq2 >= MAX_ORDER - min_eq - tensor2.coeff) move_list.push_back(tuple<int,int,int,char>(j,i,k,'c'));
                     k++;
                 }
             }

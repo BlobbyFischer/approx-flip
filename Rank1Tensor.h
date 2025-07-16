@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const int N = 4; // total number of unknowns
+const int N = 16; // total number of unknowns
 const int MAX_ORDER = 4; // so the schemes are only up to O(e^MAX_ORDER)
 
 class Rank1Tensor

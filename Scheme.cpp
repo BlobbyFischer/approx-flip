@@ -46,7 +46,7 @@ bool Scheme::update() {
                 // does this lead to a reduction?
                 int min_eq = min(beq,ceq);
                 int max_coeff = max(tensor1.coeff,tensor2.coeff);
-                if (MAX_ORDER - min_eq <= max_coeff) { 
+                if (MAX_ORDER - min_eq <= max_coeff) {
                     if (tensor1.coeff == max_coeff) { // then we need to reduce tensor1
                         int powdiff = tensor1.coeff - tensor2.coeff;
                         for (int ii=0;ii+powdiff < MAX_ORDER-tensor2.coeff;ii++) tensor2.a[ii+powdiff] ^= tensor1.a[ii];
@@ -84,7 +84,7 @@ bool Scheme::update() {
                 // does this lead to a reduction?
                 int min_eq = min(aeq,ceq);
                 int max_coeff = max(tensor1.coeff,tensor2.coeff);
-                if (MAX_ORDER - min_eq <= max_coeff) { 
+                if (MAX_ORDER - min_eq <= max_coeff) {
                     if (tensor1.coeff == max_coeff) { // then we need to reduce tensor1
                         int powdiff = tensor1.coeff - tensor2.coeff;
                         for (int ii=0;ii+powdiff < MAX_ORDER-tensor2.coeff;ii++) tensor2.b[ii+powdiff] ^= tensor1.b[ii];
@@ -121,7 +121,7 @@ bool Scheme::update() {
                 // does this lead to a reduction?
                 int min_eq = min(aeq,beq);
                 int max_coeff = max(tensor1.coeff,tensor2.coeff);
-                if (MAX_ORDER - min_eq <= max_coeff) { 
+                if (MAX_ORDER - min_eq <= max_coeff) {
                     if (tensor1.coeff == max_coeff) { // then we need to reduce tensor1
                         int powdiff = tensor1.coeff - tensor2.coeff;
                         for (int ii=0;ii+powdiff < MAX_ORDER-tensor2.coeff;ii++) tensor2.c[ii+powdiff] ^= tensor1.c[ii];
@@ -222,7 +222,7 @@ void Scheme::write_to_file() {
         }
         bool first = true;
         output << "(";
-        for (int pow=0;pow<MAX_ORDER;pow++) {
+        for (int pow=0;pow<MAX_ORDER-tensor.coeff;pow++) {
             for (int j=0;j<N;j++) {
                 if (tensor.a[pow][j]==1) {
                     if (not first) {
@@ -242,7 +242,7 @@ void Scheme::write_to_file() {
         }
         first = true;
         output << ")(";
-        for (int pow=0;pow<MAX_ORDER;pow++) {
+        for (int pow=0;pow<MAX_ORDER-tensor.coeff;pow++) {
             for (int j=0;j<N;j++) {
                 if (tensor.b[pow][j]==1) {
                     if (not first) {
@@ -262,7 +262,7 @@ void Scheme::write_to_file() {
         }
         first = true;
         output << ")(";
-        for (int pow=0;pow<MAX_ORDER;pow++) {
+        for (int pow=0;pow<MAX_ORDER-tensor.coeff;pow++) {
             for (int j=0;j<N;j++) {
                 if (tensor.c[pow][j]==1) {
                     if (not first) {
@@ -506,7 +506,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) { // flipping
     switch(flip_around) {
         case 'a':{
             // first we calculate e^(MAX_ORDER-q-x)g
-            for (int i=0;i<MAX_ORDER;i++) { 
+            for (int i=0;i<MAX_ORDER;i++) {
             // note the redundancy: we know the first few of these will be 0 since tensor1.c and tensor3.c are equal up to some point. Could improve code by passing eqc and using that here
                 shifted_g[i] = tensor1.a[i] ^ tensor3.a[i];
                 tensor1.a[i] = tensor3.a[i];
@@ -524,7 +524,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) { // flipping
         }
         case 'b':{
             // first we calculate e^(MAX_ORDER-q-x)g
-            for (int i=0;i<MAX_ORDER;i++) { 
+            for (int i=0;i<MAX_ORDER;i++) {
             // note the redundancy: we know the first few of these will be 0 since tensor1.c and tensor3.c are equal up to some point. Could improve code by passing eqc and using that here
                 shifted_g[i] = tensor1.b[i] ^ tensor3.b[i];
                 tensor1.b[i] = tensor3.b[i];
@@ -542,7 +542,7 @@ bool Scheme::eflip(int ind1, int ind2, int ind3, char flip_around) { // flipping
         }
         case 'c':{
             // first we calculate e^(MAX_ORDER-q-x)g
-            for (int i=0;i<MAX_ORDER;i++) { 
+            for (int i=0;i<MAX_ORDER;i++) {
             // note the redundancy: we know the first few of these will be 0 since tensor1.c and tensor3.c are equal up to some point. Could improve code by passing eqc and using that here
                 shifted_g[i] = tensor1.c[i] ^ tensor3.c[i];
                 tensor1.c[i] = tensor3.c[i];
@@ -579,7 +579,7 @@ void Scheme::print() {
         }
         bool first = true;
         cout << "(";
-        for (int pow=0;pow<MAX_ORDER;pow++) {
+        for (int pow=0;pow<MAX_ORDER-tensor.coeff;pow++) {
             for (int j=0;j<N;j++) {
                 if (tensor.a[pow][j]==1) {
                     if (not first) {
@@ -599,7 +599,7 @@ void Scheme::print() {
         }
         first = true;
         cout << ")(";
-        for (int pow=0;pow<MAX_ORDER;pow++) {
+        for (int pow=0;pow<MAX_ORDER-tensor.coeff;pow++) {
             for (int j=0;j<N;j++) {
                 if (tensor.b[pow][j]==1) {
                     if (not first) {
@@ -619,7 +619,7 @@ void Scheme::print() {
         }
         first = true;
         cout << ")(";
-        for (int pow=0;pow<MAX_ORDER;pow++) {
+        for (int pow=0;pow<MAX_ORDER-tensor.coeff;pow++) {
             for (int j=0;j<N;j++) {
                 if (tensor.c[pow][j]==1) {
                     if (not first) {

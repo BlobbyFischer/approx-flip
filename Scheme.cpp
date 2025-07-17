@@ -282,6 +282,7 @@ void Scheme::write_to_file() {
         }
         output << ")";
     }
+    output << "\n";
     ofstream file(filename);
     if (file.is_open()) {
         file << output.str();

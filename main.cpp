@@ -10,23 +10,26 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-    if (3 > argc or 4 < argc) {
-        cout << "USAGE: ./flip filename pathlength (check)" << endl;
+    if (3 > argc or 5 < argc) {
+        cout << "USAGE: ./flip filename pathlength (check) (earlystop)" << endl;
         return 1;
     }
     srand(static_cast<unsigned int>(time(0)) + getpid());
     string filename = argv[1];
     int pathlength = stoi(argv[2]);
     int check;
+    int earlystop;
     if (argc>3) check = stoi(argv[3]);
     else check = 0;
+    if (argc>4) earlystop = stoi(argv[4]);
+    else earlystop = 0;
     Scheme scheme;
     Scheme checker1;
     Scheme checker2;
     scheme.from_file(filename);
     if (check!=0) checker1 = expanded(scheme);
     scheme.update();
-    scheme.random_walk(pathlength);
+    scheme.random_walk(pathlength,earlystop);
     scheme.write_to_file();
     if (check!=0) {
         checker2 = expanded(scheme);
@@ -42,5 +45,11 @@ int main(int argc, char* argv[])
         }
         cout << "correct" << endl;
     }
+    /*
+    //DON'T KEEP THIS IN NORMALLY
+    for (int i=0; i<scheme.move_list.size(); i++) {
+        cout << get<0>(scheme.move_list[i]) << " " << get<1>(scheme.move_list[i]) << " " << get<2>(scheme.move_list[i]) << " " << get<3>(scheme.move_list[i]) << " " << endl;
+    }
+    */
     return 0;
 }

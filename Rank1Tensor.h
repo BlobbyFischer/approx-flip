@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const int N = 16; // total number of unknowns
+const int N = 64; // total number of unknowns
 
 #ifndef MAX_ORDER
 #define MAX_ORDER 4

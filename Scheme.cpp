@@ -643,7 +643,7 @@ void Scheme::print() {
     cout << endl << endl;
 }
 
-void Scheme::random_walk(int pathlength) {
+void Scheme::random_walk(int pathlength, int earlystop) {
     //Scheme compare_against = expanded(*this);
     for (int i=0;i<pathlength;i++) {
         if (move_list.size() == 0) break;
@@ -651,11 +651,9 @@ void Scheme::random_walk(int pathlength) {
         //print();
         //cout << get<0>(next_flip) << get<1>(next_flip) << get<2>(next_flip) << get<3>(next_flip) << endl;
         if (get<2>(next_flip) == -1) {
-            if (rand() % 2) flip(get<0>(next_flip),get<1>(next_flip),get<3>(next_flip));
-            else flip(get<1>(next_flip),get<0>(next_flip),get<3>(next_flip));
-        } else {
-            eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip));
-        }
+            if (rand() % 2) {if (flip(get<0>(next_flip),get<1>(next_flip),get<3>(next_flip)) and earlystop) return;}
+            else {if (flip(get<1>(next_flip),get<0>(next_flip),get<3>(next_flip)) and earlystop) return;}
+        } else {if (eflip(get<0>(next_flip),get<1>(next_flip),get<2>(next_flip),get<3>(next_flip)) and earlystop) return;}
         //print();
         //cout << endl;
         /*Scheme new_compare_against = expanded(*this);
